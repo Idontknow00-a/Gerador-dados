@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gerador de Dados</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 0 auto; padding: 20px; background: #f0f0f0; }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2a5298; }
+        .data-row { margin: 10px 0; display: flex; gap: 10px; }
+        input { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 8px 15px; background: #2a5298; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .copy-btn { background: #2196F3; }
+        .settings { background: #f9f9f9; padding: 15px; margin: 15px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerador de Dados Pessoais</h1>
+        
+        <div style="text-align: center; margin: 15px 0;">
+            <button onclick="setGender('male')" id="maleBtn">Masculino</button>
+            <button onclick="setGender('female')" id="femaleBtn">Feminino</button>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin: 15px 0;">
+            <button onclick="generateData()" style="flex: 1; background: #2a5298;">Gerar Dados</button>
+            <button onclick="clearData()" style="flex: 1; background: #666;">Limpar</button>
+        </div>
+        
+        <div class="data-row">
+            <input type="text" id="firstName" readonly placeholder="Nome">
+            <button class="copy-btn" onclick="copyToClipboard('firstName')">Copiar</button>
+        </div>
+        <div class="data-row">
+            <input type="text" id="lastName" readonly placeholder="Sobrenome">
+            <button class="copy-btn" onclick="copyToClipboard('lastName')">Copiar</button>
+        </div>
+        <div class="data-row">
+            <input type="text" id="cpf" readonly placeholder="CPF">
+            <button class="copy-btn" onclick="copyToClipboard('cpf')">Copiar</button>
+        </div>
+        <div class="data-row">
+            <input type="text" id="email" readonly placeholder="Email">
+            <button class="copy-btn" onclick="copyToClipboard('email')">Copiar</button>
+        </div>
+        <div class="data-row">
+            <input type="text" id="birthdate" readonly placeholder="Data Nascimento">
+            <button class="copy-btn" onclick="copyToClipboard('birthdate')">Copiar</button>
+        </div>
+        
+        <div class="settings">
+            <h3>Configurações</h3>
+            <div class="data-row">
+                <input type="number" id="aliasNumber" placeholder="Número do alias">
+                <button onclick="setAliasNumber()">Definir</button>
+            </div>
+            <div class="data-row">
+                <input type="email" id="baseEmail" placeholder="seuemail@gmail.com">
+                <button onclick="setBaseEmail()">Definir</button>
+            </div>
+            <button onclick="resetAlias()" style="width: 100%; margin-top: 10px; background: #666;">Resetar Alias</button>
+        </div>
+    </div>
+
+    <script>
+        const maleNames = ["João", "Pedro", "Carlos", "Lucas", "Miguel", "Antonio", "Paulo"];
+        const femaleNames = ["Maria", "Ana", "Julia", "Beatriz", "Carla", "Fernanda", "Patricia"];
+        const lastNames = ["Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira"];
+        
+        let currentGender = 'male';
+        
+        function setGender(gender) {
+            currentGender = gender;
+            document.getElementById('maleBtn').style.background = gender === 'male' ? '#2a5298' : '#ccc';
+            document.getElementById('femaleBtn').style.background = gender === 'female' ? '#2a5298' : '#ccc';
+        }
+        
+        function generateCPF() {
+            let cpf = '';
+            for (let i = 0; i < 9; i++) cpf += Math.floor(Math.random() * 10);
+            
+            let sum = 0;
+            for (let i = 0; i < 9; i++) sum += parseInt(cpf[i]) * (10 - i);
+            let digit1 = 11 - (sum % 11);
+            if (digit1 > 9) digit1 = 0;
+            cpf += digit1;
+            
+            sum = 0;
+            for (let i = 0; i < 10; i++) sum += parseInt(cpf[i]) * (11 - i);
+            let digit2 = 11 - (sum % 11);
+            if (digit2 > 9) digit2 = 0;
+            cpf += digit2;
+            
+            return cpf;
+        }
+        
+        function generateBirthdate() {
+            const date = new Date(1950 + Math.floor(Math.random() * 53), Math.floor(Math.random() * 12), 1 + Math.floor(Math.random() * 28));
+            const day = ('0' + date.getDate()).slice(-2);
+            const month = ('0' + (date.getMonth() + 1)).slice(-2);
+            const year = date.getFullYear();
+            return day + month + year;
+        }
+        
+        function generateEmail() {
+            let alias = parseInt(localStorage.getItem('aliasNumber')) || 1;
+            const base = localStorage.getItem('baseEmail') || "teste@gmail.com";
+            const email = base.split('@')[0] + '+' + alias + '@' + base.split('@')[1];
+            localStorage.setItem('aliasNumber', alias + 1);
+            return email;
+        }
+        
+        function generateData() {
+            const firstNames = currentGender === 'male' ? maleNames : femaleNames;
+            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            
+            document.getElementById('firstName').value = firstName;
+            document.getElementById('lastName').value = lastName;
+            document.getElementById('cpf').value = generateCPF();
+            document.getElementById('email').value = generateEmail();
+            document.getElementById('birthdate').value = generateBirthdate();
+        }
+        
+        function copyToClipboard(fieldId) {
+            const field = document.getElementById(fieldId);
+            field.select();
+            navigator.clipboard.writeText(field.value).then(() => {
+                alert('Copiado: ' + field.value);
+            });
+        }
+        
+        function clearData() {
+            document.getElementById('firstName').value = '';
+            document.getElementById('lastName').value = '';
+            document.getElementById('cpf').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('birthdate').value = '';
+        }
+        
+        function setAliasNumber() {
+            const number = document.getElementById('aliasNumber').value;
+            if (number) {
+                localStorage.setItem('aliasNumber', number);
+                alert('Número definido: ' + number);
+            }
+        }
+        
+        function setBaseEmail() {
+            const email = document.getElementById('baseEmail').value;
+            if (email && email.includes('@')) {
+                localStorage.setItem('baseEmail', email);
+                alert('Email base definido');
+            }
+        }
+        
+        function resetAlias() {
+            localStorage.removeItem('aliasNumber');
+            alert('Número de alias resetado');
+        }
+        
+        // Inicializar
+        setGender('male');
+        generateData();
+    </script>
+</body>
+</html>
