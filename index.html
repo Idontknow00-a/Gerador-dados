@@ -123,9 +123,10 @@
             "Costa", "Cruz", "Dias", "Duarte", "Ferreira", "Freitas", "Gomes", "Goncalves", "Guimaraes", "Lima",
             "Lopes", "Machado", "Mendes", "Melo", "Moraes", "Moreira", "Neto", "Oliveira", "Pereira", "Pinto",
             "Reis", "Ribeiro", "Rodrigues", "Silva", "Silveira", "Siqueira", "Souza", "Teixeira", "Torres", "Valente"];
-        
-        let currentGender = 'male';
-        
+                
+        let currentGender = localStorage.getItem('currentGender') || 'male';
+        let currentData = JSON.parse(localStorage.getItem('currentData')) || null;
+
         function showNotification(message) {
             const notification = document.getElementById('notification');
             notification.textContent = message;
@@ -137,6 +138,7 @@
         
         function setGender(gender) {
             currentGender = gender;
+            localStorage.setItem('currentGender', gender);
             document.getElementById('maleBtn').style.background = gender === 'male' ? '#2a5298' : '#ccc';
             document.getElementById('femaleBtn').style.background = gender === 'female' ? '#2a5298' : '#ccc';
         }
@@ -168,12 +170,19 @@
             return day + month + year;
         }
         
-        function generateEmail() {
+        function generateEmail(isNewGeneration = true) {
             let alias = parseInt(localStorage.getItem('aliasNumber')) || 1;
             const base = localStorage.getItem('baseEmail') || "teste@gmail.com";
-            const email = base.split('@')[0] + '+' + alias + '@' + base.split('@')[1];
-            localStorage.setItem('aliasNumber', alias + 1);
-            return email;
+            
+            if (isNewGeneration) {
+                // Só incrementa quando for uma geração NOVA de dados
+                const email = base.split('@')[0] + '+' + alias + '@' + base.split('@')[1];
+                localStorage.setItem('aliasNumber', alias + 1);
+                return email;
+            } else {
+                // Para dados salvos ou ao recarregar, usa o alias atual sem incrementar
+                return base.split('@')[0] + '+' + alias + '@' + base.split('@')[1];
+            }
         }
         
         function generateData() {
@@ -181,11 +190,60 @@
             const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
             const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
             
-            document.getElementById('firstName').value = firstName;
-            document.getElementById('lastName').value = lastName;
-            document.getElementById('cpf').value = generateCPF();
-            document.getElementById('email').value = generateEmail();
-            document.getElementById('birthdate').value = generateBirthdate();
+            const newData = {
+                firstName: firstName,
+                lastName: lastName,
+                cpf: generateCPF(),
+                email: generateEmail(true), // true = nova geração
+                birthdate: generateBirthdate()
+            };
+            
+            // Salva os dados atuais
+            currentData = newData;
+            localStorage.setItem('currentData', JSON.stringify(newData));
+            
+            // Atualiza os campos
+            document.getElementById('firstName').value = newData.firstName;
+            document.getElementById('lastName').value = newData.lastName;
+            document.getElementById('cpf').value = newData.cpf;
+            document.getElementById('email').value = newData.email;
+            document.getElementById('birthdate').value = newData.birthdate;
+        }
+
+        function generateDataOnLoad() {
+            const firstNames = currentGender === 'male' ? maleNames : femaleNames;
+            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            
+            const newData = {
+                firstName: firstName,
+                lastName: lastName,
+                cpf: generateCPF(),
+                email: generateEmail(false), // false = carregamento inicial
+                birthdate: generateBirthdate()
+            };
+            
+            currentData = newData;
+            localStorage.setItem('currentData', JSON.stringify(newData));
+            
+            document.getElementById('firstName').value = newData.firstName;
+            document.getElementById('lastName').value = newData.lastName;
+            document.getElementById('cpf').value = newData.cpf;
+            document.getElementById('email').value = newData.email;
+            document.getElementById('birthdate').value = newData.birthdate;
+        }
+
+        function loadSavedData() {
+            if (currentData) {
+                document.getElementById('firstName').value = currentData.firstName;
+                document.getElementById('lastName').value = currentData.lastName;
+                document.getElementById('cpf').value = currentData.cpf;
+                document.getElementById('email').value = currentData.email;
+                document.getElementById('birthdate').value = currentData.birthdate;
+            } else {
+                // Se não tem dados salvos, gera com email sem incrementar
+                generateDataOnLoad();
+            }
         }
         
         function copyToClipboard(fieldId) {
@@ -194,7 +252,6 @@
             navigator.clipboard.writeText(field.value).then(() => {
                 showNotification('✓ Copiado!');
             }).catch(() => {
-                // Fallback para navegadores antigos
                 document.execCommand('copy');
                 showNotification('✓ Copiado!');
             });
@@ -206,6 +263,8 @@
             document.getElementById('cpf').value = '';
             document.getElementById('email').value = '';
             document.getElementById('birthdate').value = '';
+            currentData = null;
+            localStorage.removeItem('currentData');
             showNotification('Dados limpos');
         }
         
@@ -231,8 +290,27 @@
         }
         
         // Inicializar
-        setGender('male');
-        generateData();
+        function init() {
+            // Configura o gênero salvo
+            setGender(currentGender);
+            
+            // Carrega dados salvos ou gera novos
+            loadSavedData();
+            
+            // Carrega configurações salvas
+            const savedAlias = localStorage.getItem('aliasNumber');
+            const savedBaseEmail = localStorage.getItem('baseEmail');
+            
+            if (savedAlias) {
+                document.getElementById('aliasNumber').value = savedAlias;
+            }
+            if (savedBaseEmail) {
+                document.getElementById('baseEmail').value = savedBaseEmail;
+            }
+        }
+
+        // Inicia quando a página carrega
+        init();
     </script>
 </body>
 </html>
